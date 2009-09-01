@@ -74,7 +74,34 @@ insertion. Returns a string."
 
 (defun mld-show-searches ()
   (interactive)
-  (let ((buf (get-buffer-create "*mld-searches*")))
+  (mld-send-getsearches mldonkey-connection)
+  (add-hook 'mld-after-search-hook 'mld-show-searches-1))
+
+(defun mld-show-searches-1 ()
+  (remove-hook 'mld-after-search-hook 'mld-show-searches-1)
+  (let ((buf (get-buffer-create)))
+    (set-buffer buf)
+    (let ((searches (cdr
+                     (assoc 'searches (get 'mld-get-search 'mld-data)))))
+      (while searches
+        (let ((search (car searches)))
+          (insert
+           (format "Search number: %s\nSearch string: %s\n"
+                   (bindat-get-field search 'search-num)
+                   (string-as-multibyte
+                    (bindat-get-field search 'search-string 'str-value))))
+          (insert
+           (format "Max hits: %s\n Search type: %s\nNetwork: %s\n\n"
+                   (bindat-get-field search 'search-max-hits)
+                   (bindat-get-field search 'search-type)
+                   (bindat-get-field search 'search-network))))
+        (setq searches (cdr searches))))
+    (pop-to-buffer buf)))
+      
+
+(defun mld-show-definesearches ()
+  (interactive)
+  (let ((buf (get-buffer-create "*mld-definesearches*")))
     (set-buffer buf)
     (erase-buffer)
     (let* ((searches (car (get 'mld-definesearches 'mld-data)))
