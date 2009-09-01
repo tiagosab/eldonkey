@@ -24,6 +24,19 @@
 
 
 
+; Define hooks.
+(let ((functions mld-to-gui-messages-alist))
+  (while functions
+    (let* ((function-name (cdar functions))
+           (hook-name (format "mld-after-%s-hook" function-name))
+           (hook (intern hook-name)))
+      (eval `(defvar ,hook nil
+               ,(format
+                 "Hook to be run after data %s is received, unpacked and handled."
+                 function-name))))
+    (setq functions (cdr functions))))
+
+
 ;Auxiliary/debug functions
 (defun mld-capture-packet-and-disconnect (process parameters)
   (let ((buf (get-buffer-create " *mld-debug*")))
@@ -136,8 +149,10 @@ make emacs hanging."
                  (cons name initialized-list))))
         (let* ((spec (intern (format "mld-%s-bindat-spec" name)))
                (func (intern (format "mld-get-%s" name)))
-               (msg (bindat-unpack (eval spec) parameters)))
-          (mld-save-data symb process msg func)))
+               (msg (bindat-unpack (eval spec) parameters))
+               (hook (intern (format "mld-after-%s-hook" name))))
+          (mld-save-data symb process msg func)
+          (run-hooks hook)))
     (error
      (setq mld-debug-data `(,name . ,parameters))
      (mld-disconnect process)
@@ -187,7 +202,8 @@ make emacs hanging."
                    process
                    (cons msg
                          (assq-delete-all 'client-state client-data))
-                   'mld-get-client-info)))
+                   'mld-get-client-info)
+    nil)) ; don't save data, it has been saved in mld-get-client-info.
 
 (defun mld-get-client-friend (process msg mld-data)
   (let ((client-num (bindat-get-field msg 'client-num)))
