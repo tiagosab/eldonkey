@@ -218,6 +218,9 @@ make emacs hanging."
 (defun mld-get-search (process msg mld-data)
   (cons msg mld-data))
 
+(defun mld-get-searches (process msg mld-data)
+  msg)
+
 (defun mld-get-badpassword (process msg mld-data)
       (message "Bad password. Disconnecting.")
       (mld-disconnect process))
